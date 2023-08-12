@@ -10,7 +10,10 @@ const scene = new THREE.Scene();
 let camera;
 let renderer;
 function setup() {
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  let innerWidth = window.innerWidth;
+  let innerHeight = window.innerHeight + 10;
+
+  camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 
   renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('#bg'),
@@ -18,15 +21,26 @@ function setup() {
   
   renderer.setPixelRatio(window.devicePixelRatio);
   // To make it fullscreen
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(innerWidth, innerHeight);
   // To give better perpective
   camera.position.setZ(30);
   camera.position.setX(-3);
   
   renderer.render(scene, camera);
 }
-
 setup();
+
+let orientation;
+let portrait = window.matchMedia("(orientation: portrait)");
+
+portrait.addEventListener("change", function(e) {
+    if(e.matches) {
+      orientation = 'p'
+    } else {
+      orientation = 'l'
+    }
+    setup();
+})
 
 // Torus
 
@@ -69,7 +83,7 @@ Array(1000).fill().forEach(addStar);
 
 // Background
 
-const spaceTexture = new THREE.TextureLoader().load('/images/space.jpg');
+const spaceTexture = new THREE.TextureLoader().load(orientation === 'l' ? '/images/spacel.jpg' : '/images/spacep.jpg');
 scene.background = spaceTexture;
 
 // Avatar
