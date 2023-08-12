@@ -123,9 +123,9 @@ function animate() {
   torus.rotation.y += 0.005;
   torus.rotation.z += 0.01;
 
-  harshit.rotation.x -= 0.001;
-  harshit.rotation.y -= 0.0005;
-  harshit.rotation.z -= 0.001;
+  harshit.rotation.x -= 0.01;
+  harshit.rotation.y -= 0.005;
+  harshit.rotation.z -= 0.01;
 
   moon.rotation.x += 0.005;
 
@@ -135,3 +135,6 @@ function animate() {
 }
 
 animate();
+
+
+window.onresize = function(){ location.reload(); }

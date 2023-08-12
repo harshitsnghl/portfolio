@@ -16,7 +16,6 @@ canvas {
   font-style: normal;
 }
 
-
 main {
   width: 100vw;
   color: white;
@@ -25,7 +24,7 @@ main {
   width: 100%;
   margin: 0px auto;
   padding: 120px 0px;
-  
+  left: 0;
   display: grid;
   grid-template-columns: repeat(12, 1fr);
 }
@@ -36,14 +35,94 @@ h1, h2, h3, blockquote {
   font-style: normal;
 }
 
+.subtext {
+  font-size: 2rem;
+  line-height: 2rem;
+  font-stretch: normal;
+  display: block;
+}
+
 canvas {
   position: fixed;
   top: 0;
   left: 0;
 }
 
+header {
+  background: var(--dark-bg);
+  grid-column: 1 / -1;
+  font-size: 2.5rem;
+  padding: 2rem;
+  margin-bottom: var(--spacing);
+}
+
+section {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  background: var(--dark-bg);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  margin-bottom: var(--spacing);
+}
+
+blockquote {
+  /* background: var(--dark-bg); */
+  margin: 0 0.5;
+  padding: 1;
+  grid-column: 1 / -1;
+  margin-bottom: var(--spacing);
+}
+
+blockquote p {
+  color: black;
+  /* background-color: white; */
+  font-size: 4rem;
+  display: inline;
+  line-height: 1;
+}
+
+.left {
+  grid-column: 1 / -1;
+}
 
 
+
+/* Style for social icons */
+.social-icons {
+  justify-content: center;
+  align-items: center;
+}
+
+.social-icons a {
+  margin: 0 1rem;
+  font-size: 2.5rem;
+  color: #333;
+  text-decoration: none;
+  transition: color 0.3s ease-in-out;
+}
+
+.social-icons a:hover {
+  color: #007bff; /* Change to your desired hover color */
+}
+
+@media only screen and (min-width: 850px) {
+
+  blockquote {
+    /* background: var(--dark-bg); */
+    margin: 0;
+    padding: 1;
+    grid-column: 1 / -1;
+    margin-bottom: var(--spacing);
+  }
+
+  .social-icons a {
+    margin: 0 2rem;
+    font-size: 5rem;
+    color: #333;
+    text-decoration: none;
+    transition: color 0.3s ease-in-out;
+  }
+  
   header {
     background: var(--dark-bg);
     grid-column: 2 / span 5;
@@ -51,7 +130,7 @@ canvas {
     padding: 2rem;
     margin-bottom: var(--spacing);
   }
-
+  
   section {
     grid-column: 2 / 8;
     padding: 1rem;
@@ -60,7 +139,7 @@ canvas {
     line-height: 1.5;
     margin-bottom: var(--spacing);
   }
-
+  
   blockquote {
     /* background: var(--dark-bg); */
     margin: 0;
@@ -68,35 +147,8 @@ canvas {
     grid-column: 2 / span 9;
     margin-bottom: var(--spacing);
   }
-
-  blockquote p {
-    color: black;
-    /* background-color: white; */
-    font-size: 4rem;
-    display: inline;
-    line-height: 1;
-  }
-
+  
   .left {
     grid-column: 6 / 12;
   }
-
-  /* Style for social icons */
-.social-icons {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 20px;
-}
-
-.social-icons a {
-  margin: 0 2rem;
-  font-size: 5rem;
-  color: #333;
-  text-decoration: none;
-  transition: color 0.3s ease-in-out;
-}
-
-.social-icons a:hover {
-  color: #007bff; /* Change to your desired hover color */
 }
