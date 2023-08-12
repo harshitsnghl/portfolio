@@ -7,20 +7,26 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 // Scene == container
 const scene = new THREE.Scene();
 // Perpective Camera mimics what human eyes would see
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+let camera;
+let renderer;
+function setup() {
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-const renderer = new THREE.WebGLRenderer({
-  canvas: document.querySelector('#bg'),
-});
+  renderer = new THREE.WebGLRenderer({
+    canvas: document.querySelector('#bg'),
+  });
+  
+  renderer.setPixelRatio(window.devicePixelRatio);
+  // To make it fullscreen
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  // To give better perpective
+  camera.position.setZ(30);
+  camera.position.setX(-3);
+  
+  renderer.render(scene, camera);
+}
 
-renderer.setPixelRatio(window.devicePixelRatio);
-// To make it fullscreen
-renderer.setSize(window.innerWidth, window.innerHeight);
-// To give better perpective
-camera.position.setZ(30);
-camera.position.setX(-3);
-
-renderer.render(scene, camera);
+setup();
 
 // Torus
 
@@ -137,4 +143,4 @@ function animate() {
 animate();
 
 
-window.onresize = function(){ location.reload(); }
+window.onresize = function(){ setup(); }
