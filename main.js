@@ -10,8 +10,8 @@ const scene = new THREE.Scene();
 let camera;
 let renderer;
 function setup() {
-  let innerWidth = window.innerWidth + 400;
-  let innerHeight = window.innerHeight + 400;
+  let innerWidth = window.innerWidth;
+  let innerHeight = window.innerHeight + 50;
 
   camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 
