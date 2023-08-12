@@ -11,7 +11,7 @@ let camera;
 let renderer;
 function setup() {
   let innerWidth = window.innerWidth;
-  let innerHeight = window.innerHeight + 50;
+  let innerHeight = window.innerHeight + 100;
 
   camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 
@@ -45,9 +45,8 @@ portrait.addEventListener("change", function(e) {
 // Torus
 
 const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
-const material = new THREE.MeshStandardMaterial({ wireframe: true, color: 0xffffff, roughness:1, fog: true, flatShading: true });
+const material = new THREE.MeshStandardMaterial({ wireframe: true, color: 0xffffff, emmisive: 0xffffff });
 const torus = new THREE.Mesh(geometry, material);
-scene.add(torus);
 scene.add(torus);
 
 // Lights
@@ -143,9 +142,9 @@ function animate() {
   torus.rotation.y += 0.005;
   torus.rotation.z += 0.01;
 
-  harshit.rotation.x -= 0.01;
-  harshit.rotation.y -= 0.005;
-  harshit.rotation.z -= 0.01;
+  harshit.rotation.x -= 0.005;
+  harshit.rotation.y -= 0.0025;
+  harshit.rotation.z -= 0.005;
 
   moon.rotation.x += 0.005;
 
