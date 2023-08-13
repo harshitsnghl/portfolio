@@ -9,9 +9,11 @@ const scene = new THREE.Scene();
 // Perpective Camera mimics what human eyes would see
 let camera;
 let renderer;
+let innerWidth;
+let innerHeight;
 function setup() {
-  let innerWidth = window.innerWidth + 200;
-  let innerHeight = window.innerHeight + 200;
+  innerWidth = window.innerWidth + 200;
+  innerHeight = window.innerHeight + 200;
 
   camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 
@@ -184,4 +186,8 @@ function animate() {
 animate();
 
 
-// window.onresize = function(){ setup(); }
+window.onresize = function(event){
+  if(event.target.innerHeight > innerHeight + 200 || event.target.innerWidth > innerWidth + 200) {
+    setup();
+  } 
+}

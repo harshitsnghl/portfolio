@@ -115,14 +115,12 @@ blockquote p {
   /* Change to your desired hover color */
 }
 
-.img {
+img {
   border-radius: 20rem;
   height: auto;
   width: 10rem;
   margin: 1rem 1rem 0;
-  border: white  1rem;
-  border-style: double;
-
+  border: #ffffff double 1rem;
 }
 
 .header1 {
