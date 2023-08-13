@@ -29,7 +29,10 @@ main {
   grid-template-columns: repeat(12, 1fr);
 }
 
-h1, h2, h3, blockquote {
+h1,
+h2,
+h3,
+blockquote {
   font-family: elevon, sans-serif;
   font-weight: 700;
   font-style: normal;
@@ -49,6 +52,8 @@ canvas {
 }
 
 header {
+  display: flex;
+  flex-direction: column;
   background: var(--dark-bg);
   grid-column: 1 / -1;
   font-size: 2.5rem;
@@ -106,11 +111,32 @@ blockquote p {
 }
 
 .social-icons a:hover {
-  color: #c7b818; /* Change to your desired hover color */
+  color: #c7b818;
+  /* Change to your desired hover color */
+}
+
+.img {
+  border-radius: 20rem;
+  height: auto;
+  width: 10rem;
+  margin: 1rem 1rem 0;
+  border: white  1rem;
+  border-style: double;
+
+}
+
+.header1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.header1 h1 {
+  text-align: center;
 }
 
 @media only screen and (min-width: 850px) {
-
   blockquote {
     /* background: var(--dark-bg); */
     margin: 0;
@@ -126,15 +152,17 @@ blockquote p {
     text-decoration: none;
     transition: color 0.3s ease-in-out;
   }
-  
+
   header {
+    display: flex;
+    flex-direction: column;
     background: var(--dark-bg);
     grid-column: 2 / span 5;
     font-size: 2.5rem;
     padding: 2rem;
     margin-bottom: var(--spacing);
   }
-  
+
   section {
     grid-column: 2 / 8;
     padding: 1rem;
@@ -143,7 +171,7 @@ blockquote p {
     line-height: 1.5;
     margin-bottom: var(--spacing);
   }
-  
+
   blockquote {
     /* background: var(--dark-bg); */
     margin: 0;
@@ -151,7 +179,7 @@ blockquote p {
     grid-column: 2 / 12;
     margin-bottom: var(--spacing);
   }
-  
+
   .left {
     grid-column: 6 / 12;
   }

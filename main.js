@@ -10,8 +10,8 @@ const scene = new THREE.Scene();
 let camera;
 let renderer;
 function setup() {
-  let innerWidth = window.innerWidth;
-  let innerHeight = window.innerHeight + 100;
+  let innerWidth = window.innerWidth + 200;
+  let innerHeight = window.innerHeight + 200;
 
   camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 
@@ -30,17 +30,17 @@ function setup() {
 }
 setup();
 
-let orientation;
-let portrait = window.matchMedia("(orientation: portrait)");
+// let orientation;
+// let portrait = window.matchMedia("(orientation: portrait)");
 
-portrait.addEventListener("change", function(e) {
-    if(e.matches) {
-      orientation = 'p'
-    } else {
-      orientation = 'l'
-    }
-    setup();
-})
+// portrait.addEventListener("change", function(e) {
+//     if(e.matches) {
+//       orientation = 'p'
+//     } else {
+//       orientation = 'l'
+//     }
+//     setup();
+// })
 
 // Torus
 
@@ -184,4 +184,4 @@ function animate() {
 animate();
 
 
-window.onresize = function(){ setup(); }
+// window.onresize = function(){ setup(); }
