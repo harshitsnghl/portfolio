@@ -187,7 +187,7 @@ animate();
 
 
 window.onresize = function(event){
-  if(event.target.innerHeight > innerHeight + 200 || event.target.innerWidth > innerWidth + 200) {
+  if(event.target.innerHeight > innerHeight + 200 || event.target.innerWidth > innerWidth) {
     setup();
   } 
 }
