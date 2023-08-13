@@ -66,23 +66,41 @@ scene.add(pointLight, ambientLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 function addStar() {
-  const geometry = new THREE.SphereGeometry(0.1, 10, 10);
+  const geometry = new THREE.SphereGeometry(0.2, 10, 10);
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness:1 });
   const star = new THREE.Mesh(geometry, material);
 
   const [x, y, z] = Array(3)
     .fill()
-    .map(() => THREE.MathUtils.randFloatSpread(100));
+    .map(() => THREE.MathUtils.randFloatSpread(250));
 
   star.position.set(x, y, z);
   scene.add(star);
 }
 
-Array(1000).fill().forEach(addStar);
+Array(2000).fill().forEach(addStar);
+
+// Icosahedron
+const icosahedronArr = []
+function addIcosahedron() {
+  const geometry = new THREE.IcosahedronGeometry(2, 0);
+  const material = new THREE.MeshStandardMaterial({ wireframe: true, color: 0xffffff, emmisive: 0xffffff });
+  const icosahedron = new THREE.Mesh(geometry, material);
+
+  const [x, y, z] = Array(3)
+    .fill()
+    .map(() => THREE.MathUtils.randFloatSpread(300));
+
+  icosahedron.position.set(x, y, z);
+  scene.add(icosahedron);
+  icosahedronArr.push(icosahedron);
+}
+
+Array(500).fill().forEach(addIcosahedron);
 
 // Background
-
-const spaceTexture = new THREE.TextureLoader().load(orientation === 'l' ? '/images/spacel.jpg' : '/images/spacep.jpg');
+// const spaceTexture = new THREE.TextureLoader().load(orientation === 'l' ? '/images/spacel.jpg' : '/images/spacep.jpg')
+const spaceTexture = new THREE.TextureLoader().load('/images/space.svg')
 scene.background = spaceTexture;
 
 // Avatar
@@ -118,12 +136,12 @@ harshit.position.x = 2;
 
 function moveCamera() {
   const t = document.body.getBoundingClientRect().top;
-  moon.rotation.x += 0.05;
-  moon.rotation.y += 0.075;
-  moon.rotation.z += 0.05;
+  moon.rotation.x += 0.03;
+  moon.rotation.y += 0.05;
+  moon.rotation.z += 0.03;
 
-  harshit.rotation.y += 0.01;
-  harshit.rotation.z += 0.01;
+  harshit.rotation.y -= 0.02;
+  harshit.rotation.z -= 0.02;
 
   camera.position.z = t * -0.01;
   camera.position.x = t * -0.0002;
@@ -147,6 +165,16 @@ function animate() {
   harshit.rotation.z -= 0.005;
 
   moon.rotation.x += 0.005;
+
+
+  icosahedronArr.forEach((el,i) => {
+    const x = 0.01 + (0.0001 * i);
+    const y = 0.005 + (0.00005 * i);
+    const z = 0.01 + (0.0001 * i);
+    el.rotation.x += x;
+    el.rotation.y += y;
+    el.rotation.z += y;
+  })
 
   // controls.update();
 
