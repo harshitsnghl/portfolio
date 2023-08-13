@@ -32,17 +32,17 @@ function setup() {
 }
 setup();
 
-// let orientation;
-// let portrait = window.matchMedia("(orientation: portrait)");
+let orientation;
+let portrait = window.matchMedia("(orientation: portrait)");
 
-// portrait.addEventListener("change", function(e) {
-//     if(e.matches) {
-//       orientation = 'p'
-//     } else {
-//       orientation = 'l'
-//     }
-//     setup();
-// })
+portrait.addEventListener("change", function(e) {
+    if(e.matches) {
+      orientation = 'p'
+    } else {
+      orientation = 'l'
+    }
+    setup();
+})
 
 // Torus
 
