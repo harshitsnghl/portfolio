@@ -115,7 +115,7 @@ blockquote p {
     /* background: var(--dark-bg); */
     margin: 0;
     padding: 1;
-    grid-column: 1 / -1;
+    grid-column: 2 / 10;
     margin-bottom: var(--spacing);
   }
 
@@ -148,7 +148,7 @@ blockquote p {
     /* background: var(--dark-bg); */
     margin: 0;
     padding: 0;
-    grid-column: 2 / span 9;
+    grid-column: 2 / 12;
     margin-bottom: var(--spacing);
   }
   
