@@ -3,191 +3,191 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Setup
-
-// Scene == container
 const scene = new THREE.Scene();
-// Perpective Camera mimics what human eyes would see
-let camera;
-let renderer;
-let innerWidth;
-let innerHeight;
-function setup() {
-  innerWidth = window.innerWidth + 200;
-  innerHeight = window.innerHeight + 200;
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.querySelector('#bg'),
+  alpha: true,
+});
 
-  camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+camera.position.setZ(30);
+camera.position.setX(-3);
+// Enable Layer 1 for Moon visualization
+camera.layers.enable(1);
 
-  renderer = new THREE.WebGLRenderer({
-    canvas: document.querySelector('#bg'),
-  });
-  
-  renderer.setPixelRatio(window.devicePixelRatio);
-  // To make it fullscreen
-  renderer.setSize(innerWidth, innerHeight);
-  // To give better perpective
-  camera.position.setZ(30);
-  camera.position.setX(-3);
-  
-  renderer.render(scene, camera);
-}
-setup();
+renderer.render(scene, camera);
 
-let orientation;
-let portrait = window.matchMedia("(orientation: portrait)");
+// Resizing
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-portrait.addEventListener("change", function(e) {
-    if(e.matches) {
-      orientation = 'p'
-    } else {
-      orientation = 'l'
-    }
-    setup();
-})
+// Objects
 
 // Torus
-
 const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
-const material = new THREE.MeshStandardMaterial({ wireframe: true, color: 0xffffff, emmisive: 0xffffff });
+const material = new THREE.MeshStandardMaterial({
+  color: 0xFFC640, // Interstellar Gold
+  wireframe: true
+});
 const torus = new THREE.Mesh(geometry, material);
-scene.add(torus);
 
-// Lights
+// Group for user interaction vs auto-rotation
+const torusGroup = new THREE.Group();
+torusGroup.add(torus);
+scene.add(torusGroup);
 
-const pointLight = new THREE.PointLight(0xffffff);
+// Lights (Layer 0 - Default Golden Scene)
+const pointLight = new THREE.PointLight(0xFFD700, 2); // Golden Light
 pointLight.position.set(5, 5, 5);
 
-const ambientLight = new THREE.AmbientLight(0xffffff);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft ambient
 scene.add(pointLight, ambientLight);
 
-// Helpers
+// Moon Lighting (Layer 1 - Isolated Silver Light)
+const moonLight = new THREE.DirectionalLight(0xCCDDEE, 2.0); // Cool Silver-Blue, brighter
+moonLight.position.set(10, 10, 10);
+moonLight.layers.set(1);
+scene.add(moonLight);
 
-// const lightHelper = new THREE.PointLightHelper(pointLight)
-// const gridHelper = new THREE.GridHelper(200, 50);
-// scene.add(lightHelper, gridHelper)
-
-const controls = new OrbitControls(camera, renderer.domElement);
-
+// Stars
 function addStar() {
-  const geometry = new THREE.SphereGeometry(0.2, 10, 10);
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness:1 });
+  const geometry = new THREE.SphereGeometry(0.2, 24, 24);
+  const material = new THREE.MeshStandardMaterial({ color: 0xFFF8E7 }); // Warm star white
   const star = new THREE.Mesh(geometry, material);
 
   const [x, y, z] = Array(3)
     .fill()
-    .map(() => THREE.MathUtils.randFloatSpread(250));
+    .map(() => THREE.MathUtils.randFloatSpread(100));
 
   star.position.set(x, y, z);
   scene.add(star);
 }
 
-Array(2000).fill().forEach(addStar);
-
-// Icosahedron
-const icosahedronArr = []
-function addIcosahedron() {
-  const geometry = new THREE.IcosahedronGeometry(2, 0);
-  const material = new THREE.MeshStandardMaterial({ wireframe: true, color: 0xffffff, emmisive: 0xffffff });
-  const icosahedron = new THREE.Mesh(geometry, material);
-
-  const [x, y, z] = Array(3)
-    .fill()
-    .map(() => THREE.MathUtils.randFloatSpread(300));
-
-  icosahedron.position.set(x, y, z);
-  scene.add(icosahedron);
-  icosahedronArr.push(icosahedron);
-}
-
-Array(500).fill().forEach(addIcosahedron);
+Array(200).fill().forEach(addStar);
 
 // Background
-// const spaceTexture = new THREE.TextureLoader().load(orientation === 'l' ? '/images/spacel.jpg' : '/images/spacep.jpg')
-const spaceTexture = new THREE.TextureLoader().load('/images/space.svg')
-scene.background = spaceTexture;
+scene.background = new THREE.Color(0x020205); // Void Black
 
-// Avatar
 
+// Icosahedrons (Floating bits)
+const icosahedrons = [];
+function addIcosahedron() {
+  const geometry = new THREE.IcosahedronGeometry(1, 0);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x6e6e6e, // Metallic grey debris
+    wireframe: true
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+
+  const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+  icosahedrons.push(mesh);
+}
+Array(50).fill().forEach(addIcosahedron);
+
+
+// Avatar (Cube)
 const harshitTexture = new THREE.TextureLoader().load('/images/pad.jpg');
-
-const harshit = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), new THREE.MeshBasicMaterial({ map: harshitTexture, flatShading: true, fog: true, opacity: 0.5 }));
-
+const harshit = new THREE.Mesh(
+  new THREE.BoxGeometry(3, 3, 3),
+  new THREE.MeshBasicMaterial({ map: harshitTexture })
+);
 scene.add(harshit);
+harshit.position.z = -5;
+harshit.position.x = 2;
+
 
 // Moon
-
-const moonTexture = new THREE.TextureLoader().load('/images/moon1.jpg');
+const moonTexture = new THREE.TextureLoader().load('/images/moon.jpg');
 const normalTexture = new THREE.TextureLoader().load('/images/normal.jpg');
-
 const moon = new THREE.Mesh(
   new THREE.SphereGeometry(3, 32, 32),
   new THREE.MeshStandardMaterial({
     map: moonTexture,
     normalMap: normalTexture,
+    color: 0xEEEEFF, // Cool White tint
   })
 );
-
 scene.add(moon);
-
+moon.layers.set(1); // Assign to Layer 1 (White Light Only)
 moon.position.z = 30;
 moon.position.setX(-10);
 
-harshit.position.z = -5;
-harshit.position.x = 2;
 
 // Scroll Animation
-
 function moveCamera() {
   const t = document.body.getBoundingClientRect().top;
-  moon.rotation.x += 0.03;
-  moon.rotation.y += 0.05;
-  moon.rotation.z += 0.03;
 
-  harshit.rotation.y -= 0.02;
-  harshit.rotation.z -= 0.02;
+  // Slower Moon Rotation
+  moon.rotation.x += 0.005;
+  moon.rotation.y += 0.0075;
+  moon.rotation.z += 0.005;
+
+  // Reduced scroll-based rotation for avatar, relying more on loop for constant motion
+  harshit.rotation.y += 0.01;
+  harshit.rotation.z += 0.01;
 
   camera.position.z = t * -0.01;
   camera.position.x = t * -0.0002;
   camera.rotation.y = t * -0.0002;
 }
-
 document.body.onscroll = moveCamera;
 moveCamera();
 
+
+// Interaction (Mouse Parallax)
+let mouseX = 0;
+let mouseY = 0;
+let targetX = 0;
+let targetY = 0;
+const windowHalfX = window.innerWidth / 2;
+const windowHalfY = window.innerHeight / 2;
+
+document.addEventListener('mousemove', (event) => {
+  mouseX = (event.clientX - windowHalfX);
+  mouseY = (event.clientY - windowHalfY);
+});
+
+
 // Animation Loop
+const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
+  const elapsedTime = clock.getElapsedTime();
 
+  // Torus rotation (Constant Auto-Rotation)
   torus.rotation.x += 0.01;
   torus.rotation.y += 0.005;
   torus.rotation.z += 0.01;
 
+  // Harshit (Cube) Rotation - RESTORED
   harshit.rotation.x -= 0.005;
   harshit.rotation.y -= 0.0025;
   harshit.rotation.z -= 0.005;
 
-  moon.rotation.x += 0.005;
+  // Floating Icosahedrons
+  icosahedrons.forEach((el, i) => {
+    el.rotation.x += 0.01;
+    el.rotation.y += 0.01;
+    el.position.y += Math.sin(elapsedTime + i) * 0.01;
+  });
 
+  // Parallax Smoothing (Applied to Group)
+  targetX = mouseX * 0.001;
+  targetY = mouseY * 0.001;
 
-  icosahedronArr.forEach((el,i) => {
-    const x = 0.01 + (0.0001 * i);
-    const y = 0.005 + (0.00005 * i);
-    const z = 0.01 + (0.0001 * i);
-    el.rotation.x += x;
-    el.rotation.y += y;
-    el.rotation.z += y;
-  })
-
-  // controls.update();
+  // Mouse interaction affects the group orientation, not the spinning object itself
+  torusGroup.rotation.y += 0.05 * (targetX - torusGroup.rotation.y);
+  torusGroup.rotation.x += 0.05 * (targetY - torusGroup.rotation.x);
 
   renderer.render(scene, camera);
 }
 
 animate();
-
-
-window.onresize = function(event){
-  if(event.target.innerHeight > innerHeight + 200 || event.target.innerWidth > innerWidth) {
-    setup();
-  } 
-}
