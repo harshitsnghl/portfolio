@@ -15,11 +15,31 @@
   <script src="https://kit.fontawesome.com/c0f8fd89cc.js" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harshit Singhal | Portfolio</title>
+
+  <!-- Resolve the theme before first paint so the page never flashes the wrong
+       palette. theme.js adopts whatever this decides. -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        document.documentElement.dataset.theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    })();
+  </script>
 </head>
 
 <body>
 
   <canvas id="bg"></canvas>
+
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+    <i class="fa-solid fa-sun" aria-hidden="true"></i>
+  </button>
 
   <main>
 
@@ -220,7 +240,7 @@
 
   </main>
 
-  <script type="module" src="/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 
 </html>

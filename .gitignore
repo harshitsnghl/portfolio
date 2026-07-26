@@ -22,3 +22,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
+.DS_Store
+graphify-out
+
+# Claude Code worktrees live inside the repo; without this they get staged as
+# gitlinks (mode 160000) and break clones.
+.claude/worktrees/
