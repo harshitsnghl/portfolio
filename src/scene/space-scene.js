@@ -15,7 +15,7 @@ import { auraOpacity, auraScale } from './aura.js';
 import {
   createDefinitionTexture,
   createGlowTexture,
-  createHexPlatingTextures,
+  createRibbedTextures,
   createMoonTextures,
   createSunTexture,
 } from './textures.js';
@@ -51,21 +51,22 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
   // Solid and polished rather than wireframe: a wireframe torus reads as a
   // skeleton, this reads as a classic metal ring catching the key light.
   //
-  // Plated rather than bare. A ring in one flat colour is symmetric about its
+  // Ribbed rather than bare. A ring in one flat colour is symmetric about its
   // own axis, so spinning it changes nothing on screen and it looks parked --
-  // the panel seams and the per-panel gloss give the eye something to track.
+  // ribs banded around the tube read like a tyre tread, sweeping past as the
+  // wheel turns.
   const torusGeometry = new THREE.TorusGeometry(10, 2.6, 48, 220);
   const {
-    map: platingMap,
-    bumpMap: platingBump,
-    roughnessMap: platingRoughness,
-  } = createHexPlatingTextures();
+    map: ribMap,
+    bumpMap: ribBump,
+    roughnessMap: ribRoughness,
+  } = createRibbedTextures();
   const torusMaterial = new THREE.MeshStandardMaterial({
     color: 0xffc640,
-    map: platingMap,
-    bumpMap: platingBump,
-    bumpScale: 0.06,
-    roughnessMap: platingRoughness,
+    map: ribMap,
+    bumpMap: ribBump,
+    bumpScale: 0.14,
+    roughnessMap: ribRoughness,
     metalness: 0.95,
     // Three multiplies this by the map, so 1 hands the whole range to the
     // texture rather than flattening it back out.
@@ -369,9 +370,9 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
         moonMap,
         moonBump,
         sunTexture,
-        platingMap,
-        platingBump,
-        platingRoughness,
+        ribMap,
+        ribBump,
+        ribRoughness,
         moonGlow.material.map,
         sunGlow.material.map,
       ].forEach((t) => t.dispose());
