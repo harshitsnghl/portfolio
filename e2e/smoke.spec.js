@@ -221,13 +221,15 @@ test.describe('theme', () => {
     const background = () =>
       page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
-    const dark = await background();
-    expect(dark).toBe('rgb(2, 2, 5)');
+    // body carries a 0.4s background transition, so the computed value has to
+    // be polled rather than read once -- a single read catches it mid-fade.
+    // That applies to the opening colour too: on a loaded machine first paint
+    // lands inside the transition and the read comes back part-way, as
+    // rgba(2, 2, 5, 0.027).
+    await expect.poll(background, { timeout: 3000 }).toBe('rgb(2, 2, 5)');
 
     await page.locator('#theme-toggle').click();
 
-    // body carries a 0.4s background transition, so the computed value has to
-    // be polled rather than read once -- a single read catches it mid-fade.
     await expect.poll(background, { timeout: 3000 }).toBe('rgb(250, 250, 250)');
   });
 
