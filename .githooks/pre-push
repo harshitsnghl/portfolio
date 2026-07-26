@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Runs the build and the full test suite before a push is allowed.
+# Installed by the `prepare` script in package.json, which points
+# core.hooksPath at this directory.
+#
+# Bypass in an emergency with: git push --no-verify
+
+set -e
+
+printf '\n[pre-push] build\n'
+npm run build
+
+printf '\n[pre-push] unit + dom tests\n'
+npm run test:unit
+
+printf '\n[pre-push] browser smoke tests\n'
+npm run test:e2e
+
+printf '\n[pre-push] all checks passed\n'
