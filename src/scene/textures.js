@@ -64,6 +64,113 @@ export function generateCraters(count, random = Math.random) {
   return craters.sort((a, b) => b.radius - a.radius);
 }
 
+/**
+ * Which hexagon of a unit-spacing pointy-top lattice a point falls in.
+ *
+ * `q`/`r` are axial coordinates identifying the cell, `edge` is the normalised
+ * distance to the nearest cell border: 0 on the border, 1 at the cell centre.
+ *
+ * The border between two neighbouring hexes is the perpendicular bisector of
+ * their centres, so the distance to it is just half the gap between the two
+ * nearest centre distances -- no hexagon geometry required. Seven candidates
+ * (the rounded cell plus its six neighbours) always contain the true nearest.
+ */
+const HEX_NEIGHBOURS = [
+  [0, 0],
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, -1],
+  [-1, 1],
+];
+const HEX_INRADIUS = Math.sqrt(3) / 2;
+
+export function hexCell(x, y) {
+  // Pixel -> axial, for a pointy-top lattice of circumradius 1.
+  const rf = (2 / 3) * y;
+  const qf = x / Math.sqrt(3) - y / 3;
+
+  const baseQ = Math.round(qf);
+  const baseR = Math.round(rf);
+
+  // Compared squared, so the square root is paid twice at the end rather than
+  // seven times per pixel -- this runs once per texel of the plating maps and
+  // it is on the path to first paint.
+  let bestQ = 0;
+  let bestR = 0;
+  let best = Infinity;
+  let second = Infinity;
+
+  for (let i = 0; i < HEX_NEIGHBOURS.length; i++) {
+    const q = baseQ + HEX_NEIGHBOURS[i][0];
+    const r = baseR + HEX_NEIGHBOURS[i][1];
+    const dx = x - Math.sqrt(3) * (q + r / 2);
+    const dy = y - 1.5 * r;
+    const squared = dx * dx + dy * dy;
+
+    if (squared < best) {
+      second = best;
+      best = squared;
+      bestQ = q;
+      bestR = r;
+    } else if (squared < second) {
+      second = squared;
+    }
+  }
+
+  // Half the gap to the runner-up is the distance to the shared border.
+  const toBorder = (Math.sqrt(second) - Math.sqrt(best)) / 2;
+  return {
+    q: bestQ,
+    r: bestR,
+    edge: Math.min(1, Math.max(0, toBorder / HEX_INRADIUS)),
+  };
+}
+
+/**
+ * Stable per-cell value in [0, 1). Plating needs each panel to differ from its
+ * neighbours, and it has to be the same value every frame and every redraw, so
+ * this hashes the cell id rather than drawing from a sequence.
+ */
+export function cellNoise(q, r, seed = 0) {
+  let h = (Math.imul(q, 374761393) + Math.imul(r, 668265263) + Math.imul(seed, 2246822519)) >>> 0;
+  h = (h ^ (h >>> 13)) >>> 0;
+  h = Math.imul(h, 1274126177) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 0x100000000;
+}
+
+/**
+ * Colour stops for the aura behind the moon and sun, as plain data so the
+ * shape can be asserted without a canvas.
+ *
+ * `core` is where the body's limb falls inside the sprite, as a fraction of the
+ * sprite's half-width. Everything inside it is fully transparent: the sprite is
+ * drawn with depthTest off, so any alpha there paints straight over the face of
+ * the body and reads as a bright blob in the middle of it. The aura has to
+ * start at the limb and go outwards.
+ */
+export function glowStops({ core = 0, inner = '#ffffff', outer = '#ffffff' } = {}) {
+  const limb = Math.min(0.9, Math.max(0, core));
+  const span = 1 - limb;
+  const stops = [];
+
+  if (limb > 0) {
+    // Held at zero across the disc, then feathered over the last sliver so the
+    // halo meets the limb without a hard ring.
+    stops.push({ offset: 0, color: inner, alpha: 0 });
+    stops.push({ offset: limb * 0.92, color: inner, alpha: 0 });
+  }
+
+  stops.push({ offset: limb, color: inner, alpha: 1 });
+  stops.push({ offset: limb + span * 0.1, color: inner, alpha: 0.62 });
+  stops.push({ offset: limb + span * 0.3, color: outer, alpha: 0.3 });
+  stops.push({ offset: limb + span * 0.58, color: outer, alpha: 0.12 });
+  stops.push({ offset: 1, color: outer, alpha: 0 });
+
+  return stops;
+}
+
 /** Value-noise field sampled on a torus so it tiles horizontally. */
 export function createTilingNoise(size, random = Math.random) {
   const grid = new Float32Array(size * size);
@@ -162,6 +269,116 @@ export function createDefinitionTexture({ size = 1024 } = {}) {
   ctx.fillText('Synonyms: sorcerer, wizard, magician', left + px(10), px(690));
 
   return finish(canvas);
+}
+
+/**
+ * Hex panel plating for the torus.
+ *
+ * The ring is a solid of revolution in a single flat colour, so rotating it
+ * changes nothing the eye can latch onto and it reads as standing still. The
+ * roughness map is the part that fixes that: varying gloss per panel makes
+ * specular highlights travel across the plating as the ring turns, which a
+ * uniform surface cannot do at any metalness.
+ *
+ * `columns` is the panel count around the main ring and `rows` the count around
+ * the tube. The lattice repeats every `sqrt(3)` in x and every `3` in y, so the
+ * sampled area is sized to whole periods and the texture wraps with no seam --
+ * which needs `rows` to be even.
+ */
+export function createHexPlatingTextures({
+  // Three maps at 512x128 rather than one big one. This runs synchronously
+  // before the first frame, so the resolution is the smallest that still keeps
+  // the seams crisp -- at 1024x256 the extra 780k pixel iterations pushed first
+  // paint out far enough to be measurable.
+  width = 512,
+  height = 128,
+  // The main ring is ~3.9x the circumference of the tube, so this ratio is what
+  // keeps the panels roughly square on the surface. `rows` must stay even or
+  // the lattice will not line up with itself vertically and the tube seams.
+  columns = 23,
+  rows = 6,
+  seed = 13,
+  grooveWidth = 0.22,
+} = {}) {
+  const colour = canvasOf(width, height);
+  const bump = canvasOf(width, height);
+  const rough = canvasOf(width, height);
+
+  const colourImage = colour.ctx.createImageData(width, height);
+  const bumpImage = bump.ctx.createImageData(width, height);
+  const roughImage = rough.ctx.createImageData(width, height);
+
+  const smoothstep = (edge0, edge1, x) => {
+    const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  };
+  const mix = (a, b, t) => a + (b - a) * t;
+
+  const spanX = columns * Math.sqrt(3);
+  const spanY = rows * 1.5;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const { q, r, edge } = hexCell((x / width) * spanX, (y / height) * spanY);
+
+      // Fold the cell id back into the base tile. Wrapping in y by `rows` also
+      // shifts q by rows/2, so the vertical seam only lines up if that shift is
+      // put back before the modulo.
+      const wraps = Math.floor(r / rows);
+      const cellR = r - wraps * rows;
+      const cellQ = (((q + wraps * (rows / 2)) % columns) + columns) % columns;
+
+      const tone = cellNoise(cellQ, cellR, seed);
+      const gloss = cellNoise(cellQ, cellR, seed + 977);
+
+      // 0 inside the groove, 1 across the face of the panel.
+      const panel = smoothstep(0, grooveWidth, edge);
+      // A narrow bevel just inside the groove, where a real pressed panel
+      // catches the light.
+      const bevel = Math.exp(-(((edge - grooveWidth) / 0.06) ** 2)) * 38;
+
+      const i = (y * width + x) * 4;
+
+      // Near-white: setTheme drives hue through torusMaterial.color and a map
+      // multiplies it, so any tint here would fight the theme.
+      const base = 232 + (tone - 0.5) * 28;
+      const value = mix(96, base, panel);
+      colourImage.data[i] = value;
+      colourImage.data[i + 1] = value;
+      colourImage.data[i + 2] = value * 0.995;
+      colourImage.data[i + 3] = 255;
+
+      const heightValue = Math.min(255, mix(50, 190 + (tone - 0.5) * 30, panel) + bevel);
+      bumpImage.data[i] = heightValue;
+      bumpImage.data[i + 1] = heightValue;
+      bumpImage.data[i + 2] = heightValue;
+      bumpImage.data[i + 3] = 255;
+
+      // Grooves stay matte; panel faces vary so highlights crawl as it spins.
+      const roughValue = mix(0.65, 0.12 + gloss * 0.26, panel) * 255;
+      roughImage.data[i] = roughValue;
+      roughImage.data[i + 1] = roughValue;
+      roughImage.data[i + 2] = roughValue;
+      roughImage.data[i + 3] = 255;
+    }
+  }
+
+  colour.ctx.putImageData(colourImage, 0, 0);
+  bump.ctx.putImageData(bumpImage, 0, 0);
+  rough.ctx.putImageData(roughImage, 0, 0);
+
+  // Both axes wrap: u runs around the ring, v around the tube.
+  const wrapBoth = (texture) => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+  };
+
+  return {
+    map: wrapBoth(finish(colour.canvas)),
+    bumpMap: wrapBoth(finish(bump.canvas, { srgb: false })),
+    roughnessMap: wrapBoth(finish(rough.canvas, { srgb: false })),
+  };
 }
 
 /**
@@ -282,22 +499,22 @@ export function createSunTexture({ width = 1024, seed = 21 } = {}) {
 
 /**
  * Radial falloff for the glow sprite behind the moon and sun. Drawn with a
- * steep curve so the aura reads as light bloom rather than a grey disc.
+ * steep curve so the aura reads as light bloom rather than a grey disc, and
+ * hollow across `core` so it haloes the body instead of painting over it.
  */
-export function createGlowTexture({ size = 512, inner = '#ffffff', outer = '#ffffff' } = {}) {
+export function createGlowTexture({ size = 512, inner = '#ffffff', outer = '#ffffff', core = 0 } = {}) {
   const { canvas, ctx } = canvasOf(size, size);
   const half = size / 2;
 
   const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
-  const innerColor = new THREE.Color(inner);
-  const outerColor = new THREE.Color(outer);
-  const rgb = (c) => `${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)}`;
+  const rgb = (value) => {
+    const c = new THREE.Color(value);
+    return `${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)}`;
+  };
 
-  gradient.addColorStop(0, `rgba(${rgb(innerColor)},1)`);
-  gradient.addColorStop(0.14, `rgba(${rgb(innerColor)},0.72)`);
-  gradient.addColorStop(0.32, `rgba(${rgb(outerColor)},0.3)`);
-  gradient.addColorStop(0.58, `rgba(${rgb(outerColor)},0.08)`);
-  gradient.addColorStop(1, `rgba(${rgb(outerColor)},0)`);
+  for (const stop of glowStops({ core, inner, outer })) {
+    gradient.addColorStop(stop.offset, `rgba(${rgb(stop.color)},${stop.alpha})`);
+  }
 
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, size, size);

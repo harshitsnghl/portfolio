@@ -94,6 +94,65 @@ test.describe('background rendering', () => {
     expect(count).toBeGreaterThan(0);
   });
 
+  test('keeps drawing through a full scroll and a theme switch', async ({ page }) => {
+    // The scene's textures are generated onto a canvas and its materials are
+    // built at construction, so a bad map, a bad wrap mode or a material
+    // property Three rejects only shows up in a real GL context. Scrolling and
+    // toggling drives the paths that swap the body, recolour every material and
+    // rescale the aura against a live camera distance.
+    const errors = watchForErrors(page);
+
+    await page.goto('/');
+    await ready(page);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(200);
+    await page.locator('#theme-toggle').click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(200);
+
+    const triangles = await page.evaluate(async () => {
+      const { renderer } = window.__portfolio;
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return renderer.info.render.triangles;
+    });
+
+    expect(triangles).toBeGreaterThan(0);
+    expect(errors).toEqual([]);
+  });
+
+  test('gives the aura a finite scale at both scroll extremes', async ({ page }) => {
+    // A NaN here would not throw -- Three would just stop drawing the sprite,
+    // which is exactly the "aura disappeared" symptom this is guarding.
+    await page.goto('/');
+    await ready(page);
+
+    const scaleAt = (offset) =>
+      page.evaluate(async (y) => {
+        window.scrollTo(0, y);
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        // Traversed rather than looked up by group: the torus is a Group too,
+        // and it is added to the scene first.
+        let glow = null;
+        window.__portfolio.space.scene.traverse((child) => {
+          if (!glow && child.isSprite && child.visible) glow = child;
+        });
+
+        return glow ? { scale: glow.scale.x, opacity: glow.material.opacity } : null;
+      }, offset);
+
+    const near = await scaleAt(0);
+    const far = await scaleAt(await page.evaluate(() => document.body.scrollHeight));
+
+    for (const state of [near, far]) {
+      expect(state).not.toBeNull();
+      expect(Number.isFinite(state.scale)).toBe(true);
+      expect(state.scale).toBeGreaterThan(0);
+      expect(state.opacity).toBeGreaterThan(0);
+    }
+  });
+
   test('rebuilds the field for a new viewport without erroring', async ({ page }) => {
     const errors = watchForErrors(page);
 

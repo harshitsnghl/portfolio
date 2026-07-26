@@ -11,9 +11,11 @@
  */
 
 import * as THREE from 'three';
+import { auraOpacity, auraScale } from './aura.js';
 import {
   createDefinitionTexture,
   createGlowTexture,
+  createHexPlatingTextures,
   createMoonTextures,
   createSunTexture,
 } from './textures.js';
@@ -48,11 +50,26 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
 
   // Solid and polished rather than wireframe: a wireframe torus reads as a
   // skeleton, this reads as a classic metal ring catching the key light.
+  //
+  // Plated rather than bare. A ring in one flat colour is symmetric about its
+  // own axis, so spinning it changes nothing on screen and it looks parked --
+  // the panel seams and the per-panel gloss give the eye something to track.
   const torusGeometry = new THREE.TorusGeometry(10, 2.6, 48, 220);
+  const {
+    map: platingMap,
+    bumpMap: platingBump,
+    roughnessMap: platingRoughness,
+  } = createHexPlatingTextures();
   const torusMaterial = new THREE.MeshStandardMaterial({
     color: 0xffc640,
+    map: platingMap,
+    bumpMap: platingBump,
+    bumpScale: 0.06,
+    roughnessMap: platingRoughness,
     metalness: 0.95,
-    roughness: 0.22,
+    // Three multiplies this by the map, so 1 hands the whole range to the
+    // texture rather than flattening it back out.
+    roughness: 1,
     emissive: 0x2a1c00,
     emissiveIntensity: 0.6,
   });
@@ -82,8 +99,11 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
   rimLight.position.set(-8, 4, 12);
   scene.add(keyLight, ambientLight, rimLight);
 
-  // Layer 1 lights only the celestial body, so its shading stays independent
-  // of the warm scene lighting.
+  // A cool light aimed to shape the celestial body. Note that the layer does
+  // NOT confine it: Three collects a light whenever `light.layers.test(camera.layers)`
+  // passes, and the camera has layer 1 enabled, so this reaches every object in
+  // the scene. Per-object light masking isn't a thing here -- anything the body
+  // needs and the rest of the scene must not get has to come from its material.
   const bodyLight = new THREE.DirectionalLight(0xccddee, 2);
   bodyLight.position.set(10, 6, 10);
   bodyLight.layers.set(1);
@@ -105,17 +125,38 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
     scene.add(star);
   }
 
+  // Solid faceted body plus a bright outline, rather than bare wireframe. A
+  // pure wireframe at low opacity disappears into the particle field behind it;
+  // filling the faces gives the form volume, and keeping the edges preserves
+  // the icosahedral structure that a plain solid would throw away.
+  //
+  // Edge weight comes from colour contrast, not from LineBasicMaterial's
+  // `linewidth` -- WebGL caps that at 1px on every major platform and ignores
+  // anything larger without warning.
   const shardGeometry = new THREE.IcosahedronGeometry(1, 0);
   const shardMaterial = new THREE.MeshStandardMaterial({
     color: 0x6e6e6e,
-    wireframe: true,
+    flatShading: true,
+    metalness: 0.35,
+    roughness: 0.45,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.38,
   });
+  const shardEdgeGeometry = new THREE.EdgesGeometry(shardGeometry);
+  const shardEdgeMaterial = new THREE.LineBasicMaterial({
+    color: 0xffd98a,
+    transparent: true,
+    opacity: 0.95,
+  });
+
   const shards = [];
   for (let i = 0; i < config.shardCount; i++) {
     const shard = new THREE.Mesh(shardGeometry, shardMaterial);
     shard.position.set(spread(), spread(), spread());
+    // Varied sizes read as depth; fifty identical shards read as a pattern.
+    shard.scale.setScalar(THREE.MathUtils.randFloat(0.6, 1.6));
+    // Added as a child so the outline inherits the shard's drift and spin.
+    shard.add(new THREE.LineSegments(shardEdgeGeometry, shardEdgeMaterial));
     scene.add(shard);
     shards.push(shard);
   }
@@ -148,36 +189,56 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
     color: 0xeeeeff,
     roughness: 0.95,
     metalness: 0,
+    // A full moon is lit head-on: bright across the whole disc, no terminator
+    // sweeping it. Emissive doesn't care where the lights are, so it holds the
+    // face evenly bright while the directional above still gives the craters
+    // their relief. Doing this with an actual light would brighten the torus
+    // and shards too, since lights here can't be masked per object.
+    emissive: 0xffffff,
+    emissiveMap: moonMap,
+    emissiveIntensity: 0.55,
   });
   const moon = new THREE.Mesh(bodyGeometry, moonMaterial);
   moon.layers.set(1);
   body.add(moon);
 
-  const sunMaterial = new THREE.MeshBasicMaterial({ map: createSunTexture() });
+  const sunTexture = createSunTexture();
+  const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
   const sun = new THREE.Mesh(bodyGeometry, sunMaterial);
   sun.layers.set(1);
   sun.visible = false;
   body.add(sun);
 
-  // Aura. Additive blending so it reads as bloom rather than a painted disc,
-  // and depthWrite off so it never punches a hole in what is behind it.
-  function makeGlow(inner, outer, scale) {
+  // Aura, drawn with depthWrite off so it never punches a hole in what is
+  // behind it.
+  //
+  // `core` is where the body's limb lands inside the sprite: the sprite's
+  // half-width is bodyRadius * scale / 2 and the disc's radius is bodyRadius,
+  // so the limb sits at 2 / scale. Everything inside that is transparent.
+  // Without it, depthTest being off means the gradient's bright centre paints
+  // straight over the face of the body and reads as a blob in the middle of it.
+  function makeGlow(inner, outer, scale, blending) {
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: createGlowTexture({ inner, outer }),
-        blending: THREE.AdditiveBlending,
+        map: createGlowTexture({ inner, outer, core: 2 / scale }),
+        blending,
         transparent: true,
         depthWrite: false,
         depthTest: false,
       })
     );
     sprite.scale.setScalar(config.bodyRadius * scale);
+    sprite.userData.baseScale = config.bodyRadius * scale;
     sprite.layers.set(1);
     return sprite;
   }
 
-  const moonGlow = makeGlow('#dce6ff', '#8fa8d8', 5.2);
-  const sunGlow = makeGlow('#fff3c4', '#ff8a1f', 7.5);
+  // Additive reads as bloom against a near-black sky, but it is a no-op over a
+  // near-white page -- adding light to white leaves white, which is why the sun
+  // had no visible aura in light mode. Normal blending instead, so the warm
+  // halo actually paints.
+  const moonGlow = makeGlow('#dce6ff', '#8fa8d8', 5.2, THREE.AdditiveBlending);
+  const sunGlow = makeGlow('#fff3c4', '#ff8a1f', 7.5, THREE.NormalBlending);
   sunGlow.visible = false;
   body.add(moonGlow, sunGlow);
 
@@ -223,10 +284,16 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
       moon.rotation.y += 0.0009;
       sun.rotation.y += 0.0014;
 
-      // Aura breathes gently; a fixed-size glow looks like a decal.
+      // Aura breathes gently; a fixed-size glow looks like a decal. On top of
+      // that it grows and gains opacity with distance, because a size-attenuated
+      // sprite shrinks its own falloff into nothing and the halo drops out
+      // entirely once the body is far away.
+      const distance = camera.position.distanceTo(body.position);
       activeGlow.scale.setScalar(
-        config.bodyRadius * (activeGlow === sunGlow ? 7.5 : 5.2) * (1 + Math.sin(elapsed * 0.6) * 0.04)
+        auraScale({ distance, baseScale: activeGlow.userData.baseScale }) *
+          (1 + Math.sin(elapsed * 0.6) * 0.04)
       );
+      activeGlow.material.opacity = auraOpacity({ distance });
 
       shards.forEach((shard, i) => {
         shard.rotation.x += 0.01;
@@ -252,7 +319,9 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
       torusMaterial.emissive.set(palette.scene.torusEmissive);
       torusWireMaterial.color.set(palette.scene.torusWire);
       shardMaterial.color.set(palette.scene.shard);
+      shardEdgeMaterial.color.set(palette.scene.shardEdge);
       starMaterial.color.set(palette.scene.star);
+      moonMaterial.emissiveIntensity = palette.scene.moonEmissive;
 
       keyLight.color.set(palette.scene.keyLight);
       keyLight.intensity = palette.scene.keyIntensity;
@@ -275,19 +344,37 @@ export function createSpaceScene({ config = SCENE_CONFIG } = {}) {
     },
 
     dispose() {
-      [torusGeometry, torusWireGeometry, starGeometry, shardGeometry, bodyGeometry].forEach((g) =>
-        g.dispose()
-      );
+      [
+        torusGeometry,
+        torusWireGeometry,
+        starGeometry,
+        shardGeometry,
+        shardEdgeGeometry,
+        bodyGeometry,
+      ].forEach((g) => g.dispose());
       [
         torusMaterial,
         torusWireMaterial,
         starMaterial,
         shardMaterial,
+        shardEdgeMaterial,
         avatarMaterial,
         moonMaterial,
         sunMaterial,
+        moonGlow.material,
+        sunGlow.material,
       ].forEach((m) => m.dispose());
-      [definitionTexture, moonMap, moonBump].forEach((t) => t.dispose());
+      [
+        definitionTexture,
+        moonMap,
+        moonBump,
+        sunTexture,
+        platingMap,
+        platingBump,
+        platingRoughness,
+        moonGlow.material.map,
+        sunGlow.material.map,
+      ].forEach((t) => t.dispose());
     },
   };
 }

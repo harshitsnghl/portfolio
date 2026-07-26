@@ -23,6 +23,7 @@ describe('palettes', () => {
       'torusEmissive',
       'torusWire',
       'shard',
+      'shardEdge',
       'star',
       'moonTint',
       'keyLight',
@@ -40,7 +41,7 @@ describe('palettes', () => {
 
   it.each(THEME_NAMES)('%s defines finite, non-negative light intensities', (name) => {
     const { scene } = THEMES[name];
-    ['keyIntensity', 'moonIntensity', 'ambientIntensity'].forEach((key) => {
+    ['keyIntensity', 'moonIntensity', 'moonEmissive', 'ambientIntensity'].forEach((key) => {
       expect(Number.isFinite(scene[key])).toBe(true);
       expect(scene[key]).toBeGreaterThanOrEqual(0);
     });

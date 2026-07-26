@@ -16,6 +16,7 @@ export const THEMES = {
       torusEmissive: '#2A1C00',
       torusWire: '#FFF8E7',
       shard: '#6E6E6E',
+      shardEdge: '#FFD98A',
       star: '#FFF8E7',
       moonTint: '#EEEEFF',
       keyLight: '#FFD700',
@@ -23,6 +24,10 @@ export const THEMES = {
       rimLight: '#FFF2CC',
       moonLight: '#CCDDEE',
       moonIntensity: 2,
+      // A full moon is lit head-on and reads evenly bright right out to the
+      // limb. Scene lights can't do that without washing out everything else,
+      // so the moon carries its own glow through an emissive map instead.
+      moonEmissive: 0.55,
       ambientIntensity: 0.5,
     },
   },
@@ -37,6 +42,9 @@ export const THEMES = {
       torusEmissive: '#001B3D',
       torusWire: '#202124',
       shard: '#9AA0A6',
+      // Edges have to go dark in light mode; a pale outline vanishes against
+      // the near-white page.
+      shardEdge: '#3C4043',
       star: '#BDC1C6',
       moonTint: '#FFFFFF',
       keyLight: '#FFFFFF',
@@ -44,6 +52,7 @@ export const THEMES = {
       rimLight: '#DCE7FF',
       moonLight: '#FFE9B8',
       moonIntensity: 1.6,
+      moonEmissive: 0.2, // the moon is hidden by day; kept only for parity
       ambientIntensity: 1.1,
     },
   },
