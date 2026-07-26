@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cellNoise,
   createRandom,
   createTilingNoise,
   generateCraters,
   glowStops,
-  hexCell,
+  ribProfile,
 } from '../../src/scene/textures.js';
 
 describe('createRandom', () => {
@@ -148,108 +147,90 @@ describe('createTilingNoise', () => {
   });
 });
 
-describe('hexCell', () => {
-  const centreOf = (q, r) => [Math.sqrt(3) * (q + r / 2), 1.5 * r];
-
-  it('keeps edge inside the unit interval everywhere', () => {
-    for (let x = -12; x < 12; x += 0.31) {
-      for (let y = -12; y < 12; y += 0.29) {
-        const { edge } = hexCell(x, y);
-        expect(edge).toBeGreaterThanOrEqual(0);
-        expect(edge).toBeLessThanOrEqual(1);
-      }
+describe('ribProfile', () => {
+  it('keeps face and rim inside the unit interval everywhere', () => {
+    for (let u = -3; u < 3; u += 0.0017) {
+      const { face, rim } = ribProfile(u);
+      expect(face).toBeGreaterThanOrEqual(0);
+      expect(face).toBeLessThanOrEqual(1);
+      expect(rim).toBeGreaterThanOrEqual(0);
+      expect(rim).toBeLessThanOrEqual(1);
     }
   });
 
-  it('reports the cell whose centre really is nearest', () => {
-    // The seven-candidate shortcut is only valid if it never misses a closer
-    // centre, so this checks it against a brute-force sweep.
-    for (let x = -6; x < 6; x += 0.37) {
-      for (let y = -6; y < 6; y += 0.41) {
-        const { q, r } = hexCell(x, y);
-        const [cx, cy] = centreOf(q, r);
-        const chosen = Math.hypot(x - cx, y - cy);
+  it('sits flat on top of a rib and flat in the groove', () => {
+    const count = 44;
+    // Rib centres land on the half-period, grooves on the period boundary.
+    expect(ribProfile(0.5 / count, { count }).face).toBeCloseTo(1, 6);
+    expect(ribProfile(0, { count }).face).toBeCloseTo(0, 6);
+    expect(ribProfile(1 / count, { count }).face).toBeCloseTo(0, 6);
+  });
 
-        for (let dq = -4; dq <= 4; dq++) {
-          for (let dr = -4; dr <= 4; dr++) {
-            const [ox, oy] = centreOf(q + dq, r + dr);
-            expect(Math.hypot(x - ox, y - oy)).toBeGreaterThanOrEqual(chosen - 1e-9);
-          }
-        }
-      }
+  it('falls monotonically from rib centre to groove', () => {
+    const count = 44;
+    let previous = ribProfile(0.5 / count, { count }).face;
+    for (let t = 0.5; t <= 1; t += 0.01) {
+      const face = ribProfile(t / count, { count }).face;
+      expect(face).toBeLessThanOrEqual(previous + 1e-9);
+      previous = face;
     }
   });
 
-  it('peaks at a cell centre and bottoms out on a border', () => {
-    const [cx, cy] = centreOf(2, -1);
-    expect(hexCell(cx, cy).edge).toBeCloseTo(1, 6);
-
-    // Midway to a neighbour is exactly the shared border.
-    const [nx, ny] = centreOf(3, -1);
-    expect(hexCell((cx + nx) / 2, (cy + ny) / 2).edge).toBeCloseTo(0, 6);
+  it('peaks the rim on the shoulder, which is what catches the key light', () => {
+    const count = 44;
+    const duty = 0.55;
+    const shoulder = (0.5 + duty / 2) / count;
+    expect(ribProfile(shoulder, { count, duty }).rim).toBeCloseTo(1, 6);
+    // and is all but spent by the time it reaches the rib centre or the
+    // groove floor, so it reads as an edge and not as a general brightening
+    expect(ribProfile(0.5 / count, { count, duty }).rim).toBeLessThan(0.02);
+    expect(ribProfile(1 / count, { count, duty }).rim).toBeLessThan(0.02);
   });
 
-  it('holds one cell id across the interior, so panels stay whole', () => {
-    const [cx, cy] = centreOf(1, 2);
-    const { q, r } = hexCell(cx, cy);
-    for (const [dx, dy] of [
-      [0.2, 0],
-      [-0.2, 0],
-      [0, 0.2],
-      [0, -0.2],
-      [0.15, 0.15],
-    ]) {
-      expect(hexCell(cx + dx, cy + dy)).toMatchObject({ q, r });
+  it('repeats every period, so the map wraps with no seam', () => {
+    const count = 44;
+    for (let u = 0; u < 1; u += 0.013) {
+      expect(ribProfile(u + 1, { count }).face).toBeCloseTo(ribProfile(u, { count }).face, 9);
+      expect(ribProfile(u + 1 / count, { count }).face).toBeCloseTo(
+        ribProfile(u, { count }).face,
+        9
+      );
     }
   });
 
-  it('tiles on both axes, so the plating wraps with no seam', () => {
-    const columns = 30;
-    const rows = 6; // must be even for the vertical period to land on the lattice
-
-    for (let x = 0; x < 5; x += 0.43) {
-      for (let y = 0; y < 5; y += 0.47) {
-        expect(hexCell(x + columns * Math.sqrt(3), y).edge).toBeCloseTo(hexCell(x, y).edge, 9);
-        expect(hexCell(x, y + rows * 1.5).edge).toBeCloseTo(hexCell(x, y).edge, 9);
-      }
+  it('is symmetric about the rib centre', () => {
+    const count = 44;
+    for (let d = 0; d < 0.5; d += 0.017) {
+      const left = ribProfile((0.5 - d) / count, { count });
+      const right = ribProfile((0.5 + d) / count, { count });
+      expect(left.face).toBeCloseTo(right.face, 9);
+      expect(left.rim).toBeCloseTo(right.rim, 9);
     }
+  });
+
+  it('widens the rib as duty grows', () => {
+    const count = 44;
+    const at = (duty) => ribProfile(0.8 / count, { count, duty }).face;
+    expect(at(0.8)).toBeGreaterThan(at(0.4));
+  });
+
+  it('survives degenerate settings rather than emitting NaN', () => {
+    [
+      { count: 0 },
+      { count: -4 },
+      { duty: 0 },
+      { duty: 1 },
+      { duty: -1 },
+      { bevel: 0 },
+    ].forEach((options) => {
+      const { face, rim } = ribProfile(0.3, options);
+      expect(Number.isFinite(face)).toBe(true);
+      expect(Number.isFinite(rim)).toBe(true);
+    });
   });
 
   it('is deterministic', () => {
-    expect(hexCell(3.3, -7.1)).toEqual(hexCell(3.3, -7.1));
-  });
-});
-
-describe('cellNoise', () => {
-  it('stays within the unit interval', () => {
-    for (let q = -30; q < 30; q++) {
-      for (let r = -30; r < 30; r++) {
-        const value = cellNoise(q, r, 13);
-        expect(value).toBeGreaterThanOrEqual(0);
-        expect(value).toBeLessThan(1);
-      }
-    }
-  });
-
-  it('is stable for a cell, so a panel does not flicker between redraws', () => {
-    expect(cellNoise(4, -9, 13)).toBe(cellNoise(4, -9, 13));
-  });
-
-  it('differs between neighbouring cells, which is the whole point', () => {
-    const values = new Set();
-    for (let q = 0; q < 12; q++) for (let r = 0; r < 12; r++) values.add(cellNoise(q, r, 13));
-    expect(values.size).toBeGreaterThan(130); // 144 cells, near enough all distinct
-  });
-
-  it('decorrelates on the seed, so gloss does not track brightness', () => {
-    expect(cellNoise(5, 5, 13)).not.toBe(cellNoise(5, 5, 990));
-  });
-
-  it('spreads roughly evenly', () => {
-    const buckets = new Array(10).fill(0);
-    for (let q = 0; q < 100; q++)
-      for (let r = 0; r < 100; r++) buckets[Math.floor(cellNoise(q, r, 3) * 10)]++;
-    buckets.forEach((n) => expect(n).toBeGreaterThan(700)); // ~1000 expected
+    expect(ribProfile(0.37)).toEqual(ribProfile(0.37));
   });
 });
 

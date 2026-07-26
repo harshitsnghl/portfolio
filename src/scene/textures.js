@@ -65,82 +65,6 @@ export function generateCraters(count, random = Math.random) {
 }
 
 /**
- * Which hexagon of a unit-spacing pointy-top lattice a point falls in.
- *
- * `q`/`r` are axial coordinates identifying the cell, `edge` is the normalised
- * distance to the nearest cell border: 0 on the border, 1 at the cell centre.
- *
- * The border between two neighbouring hexes is the perpendicular bisector of
- * their centres, so the distance to it is just half the gap between the two
- * nearest centre distances -- no hexagon geometry required. Seven candidates
- * (the rounded cell plus its six neighbours) always contain the true nearest.
- */
-const HEX_NEIGHBOURS = [
-  [0, 0],
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-  [1, -1],
-  [-1, 1],
-];
-const HEX_INRADIUS = Math.sqrt(3) / 2;
-
-export function hexCell(x, y) {
-  // Pixel -> axial, for a pointy-top lattice of circumradius 1.
-  const rf = (2 / 3) * y;
-  const qf = x / Math.sqrt(3) - y / 3;
-
-  const baseQ = Math.round(qf);
-  const baseR = Math.round(rf);
-
-  // Compared squared, so the square root is paid twice at the end rather than
-  // seven times per pixel -- this runs once per texel of the plating maps and
-  // it is on the path to first paint.
-  let bestQ = 0;
-  let bestR = 0;
-  let best = Infinity;
-  let second = Infinity;
-
-  for (let i = 0; i < HEX_NEIGHBOURS.length; i++) {
-    const q = baseQ + HEX_NEIGHBOURS[i][0];
-    const r = baseR + HEX_NEIGHBOURS[i][1];
-    const dx = x - Math.sqrt(3) * (q + r / 2);
-    const dy = y - 1.5 * r;
-    const squared = dx * dx + dy * dy;
-
-    if (squared < best) {
-      second = best;
-      best = squared;
-      bestQ = q;
-      bestR = r;
-    } else if (squared < second) {
-      second = squared;
-    }
-  }
-
-  // Half the gap to the runner-up is the distance to the shared border.
-  const toBorder = (Math.sqrt(second) - Math.sqrt(best)) / 2;
-  return {
-    q: bestQ,
-    r: bestR,
-    edge: Math.min(1, Math.max(0, toBorder / HEX_INRADIUS)),
-  };
-}
-
-/**
- * Stable per-cell value in [0, 1). Plating needs each panel to differ from its
- * neighbours, and it has to be the same value every frame and every redraw, so
- * this hashes the cell id rather than drawing from a sequence.
- */
-export function cellNoise(q, r, seed = 0) {
-  let h = (Math.imul(q, 374761393) + Math.imul(r, 668265263) + Math.imul(seed, 2246822519)) >>> 0;
-  h = (h ^ (h >>> 13)) >>> 0;
-  h = Math.imul(h, 1274126177) >>> 0;
-  return ((h ^ (h >>> 16)) >>> 0) / 0x100000000;
-}
-
-/**
  * Colour stops for the aura behind the moon and sun, as plain data so the
  * shape can be asserted without a canvas.
  *
@@ -272,33 +196,54 @@ export function createDefinitionTexture({ size = 1024 } = {}) {
 }
 
 /**
- * Hex panel plating for the torus.
+ * Cross-section of one rib, as a pure function of position around the ring.
+ *
+ * `u` runs 0..1 around the main ring and repeats, so this is sampled per texel
+ * of the rib maps and asserted directly in the unit tests.
+ *
+ * Returns `face` -- 1 across the flat top of a rib, 0 in the groove between two,
+ * smoothly crossing the shoulder -- and `rim`, a narrow spike peaking exactly on
+ * that shoulder, which is where a machined edge catches the key light.
+ */
+export function ribProfile(u, { count = 44, duty = 0.55, bevel = 0.11 } = {}) {
+  if (!(count > 0)) return { face: 1, rim: 0 };
+
+  // Position inside this rib's period, folded to a distance from the rib
+  // centre, so the profile is symmetric and both shoulders fall out of one term.
+  const phase = ((u * count) % 1 + 1) % 1;
+  const s = Math.abs(phase - 0.5);
+
+  // `duty` is the fraction of the period the rib occupies, so it clamps to 1
+  // (rib fills the period, no groove left) and the half-width to 0.5.
+  const half = Math.min(1, Math.max(0, duty)) / 2;
+  const soft = Math.max(1e-6, bevel);
+
+  const t = Math.min(1, Math.max(0, (s - (half - soft)) / (2 * soft)));
+  const face = 1 - t * t * (3 - 2 * t);
+  const rim = Math.exp(-(((s - half) / soft) ** 2));
+
+  return { face, rim };
+}
+
+/**
+ * Ribbed plating for the torus.
  *
  * The ring is a solid of revolution in a single flat colour, so rotating it
- * changes nothing the eye can latch onto and it reads as standing still. The
- * roughness map is the part that fixes that: varying gloss per panel makes
- * specular highlights travel across the plating as the ring turns, which a
- * uniform surface cannot do at any metalness.
+ * changes nothing the eye can latch onto and it reads as standing still. Ribs
+ * banded around the tube fix that the way a tyre tread does: each one sweeps
+ * past as the wheel turns, and because a rib wraps the tube it crosses every
+ * surface normal, so its specular highlight travels rather than sitting still.
  *
- * `columns` is the panel count around the main ring and `rows` the count around
- * the tube. The lattice repeats every `sqrt(3)` in x and every `3` in y, so the
- * sampled area is sized to whole periods and the texture wraps with no seam --
- * which needs `rows` to be even.
+ * The profile only varies around the ring, so the maps are four pixels tall --
+ * 4k texels against the 65k the hex plating cost, all of it on the path to first
+ * paint.
  */
-export function createHexPlatingTextures({
-  // Three maps at 512x128 rather than one big one. This runs synchronously
-  // before the first frame, so the resolution is the smallest that still keeps
-  // the seams crisp -- at 1024x256 the extra 780k pixel iterations pushed first
-  // paint out far enough to be measurable.
-  width = 512,
-  height = 128,
-  // The main ring is ~3.9x the circumference of the tube, so this ratio is what
-  // keeps the panels roughly square on the surface. `rows` must stay even or
-  // the lattice will not line up with itself vertically and the tube seams.
-  columns = 23,
-  rows = 6,
-  seed = 13,
-  grooveWidth = 0.22,
+export function createRibbedTextures({
+  width = 1024,
+  height = 4,
+  count = 44,
+  duty = 0.55,
+  bevel = 0.11,
 } = {}) {
   const colour = canvasOf(width, height);
   const bump = canvasOf(width, height);
@@ -308,54 +253,32 @@ export function createHexPlatingTextures({
   const bumpImage = bump.ctx.createImageData(width, height);
   const roughImage = rough.ctx.createImageData(width, height);
 
-  const smoothstep = (edge0, edge1, x) => {
-    const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
-    return t * t * (3 - 2 * t);
-  };
   const mix = (a, b, t) => a + (b - a) * t;
 
-  const spanX = columns * Math.sqrt(3);
-  const spanY = rows * 1.5;
+  for (let x = 0; x < width; x++) {
+    const { face, rim } = ribProfile(x / width, { count, duty, bevel });
 
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const { q, r, edge } = hexCell((x / width) * spanX, (y / height) * spanY);
+    // Near-white: setTheme drives hue through torusMaterial.color and a map
+    // multiplies it, so any tint here would fight the theme.
+    const value = Math.min(255, mix(84, 234, face) + rim * 18);
+    const heightValue = Math.min(255, mix(34, 210, face) + rim * 26);
+    // Grooves stay matte and the rib tops are polished, so the highlight rides
+    // the ribs instead of smearing across the whole ring.
+    const roughValue = mix(0.72, 0.16, face) * 255 - rim * 26;
 
-      // Fold the cell id back into the base tile. Wrapping in y by `rows` also
-      // shifts q by rows/2, so the vertical seam only lines up if that shift is
-      // put back before the modulo.
-      const wraps = Math.floor(r / rows);
-      const cellR = r - wraps * rows;
-      const cellQ = (((q + wraps * (rows / 2)) % columns) + columns) % columns;
-
-      const tone = cellNoise(cellQ, cellR, seed);
-      const gloss = cellNoise(cellQ, cellR, seed + 977);
-
-      // 0 inside the groove, 1 across the face of the panel.
-      const panel = smoothstep(0, grooveWidth, edge);
-      // A narrow bevel just inside the groove, where a real pressed panel
-      // catches the light.
-      const bevel = Math.exp(-(((edge - grooveWidth) / 0.06) ** 2)) * 38;
-
+    for (let y = 0; y < height; y++) {
       const i = (y * width + x) * 4;
 
-      // Near-white: setTheme drives hue through torusMaterial.color and a map
-      // multiplies it, so any tint here would fight the theme.
-      const base = 232 + (tone - 0.5) * 28;
-      const value = mix(96, base, panel);
       colourImage.data[i] = value;
       colourImage.data[i + 1] = value;
       colourImage.data[i + 2] = value * 0.995;
       colourImage.data[i + 3] = 255;
 
-      const heightValue = Math.min(255, mix(50, 190 + (tone - 0.5) * 30, panel) + bevel);
       bumpImage.data[i] = heightValue;
       bumpImage.data[i + 1] = heightValue;
       bumpImage.data[i + 2] = heightValue;
       bumpImage.data[i + 3] = 255;
 
-      // Grooves stay matte; panel faces vary so highlights crawl as it spins.
-      const roughValue = mix(0.65, 0.12 + gloss * 0.26, panel) * 255;
       roughImage.data[i] = roughValue;
       roughImage.data[i + 1] = roughValue;
       roughImage.data[i + 2] = roughValue;
