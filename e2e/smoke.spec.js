@@ -254,7 +254,7 @@ test.describe('content', () => {
 
     await expect(page.locator('h1')).toHaveText('Harshit Singhal');
     await expect(page.locator('.magic-text')).toBeVisible();
-    await expect(page.locator('#projects .project-card')).toHaveCount(6);
+    await expect(page.locator('#projects .project-card')).toHaveCount(17);
     await expect(page.locator('#experience .experience-card').first()).toBeVisible();
   });
 });
