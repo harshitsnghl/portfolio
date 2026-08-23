@@ -21,5 +21,8 @@
   },
   "dependencies": {
     "three": "^0.155.0"
+  },
+  "overrides": {
+    "nanoid": "^3.3.18"
   }
 }
