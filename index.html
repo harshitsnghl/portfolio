@@ -103,7 +103,7 @@
         </div>
         <div>
           <h3>Observability & Tooling</h3>
-          <p>OpenTelemetry, GraalVM, Git, Splunk, Postman, Bruno, Jenkins, JUnit</p>
+          <p>OpenTelemetry, GraalVM, Git, Splunk, Postman, Bruno, Jenkins, JUnit, Claude Code</p>
         </div>
       </div>
     </section>
@@ -298,12 +298,17 @@
               fixed recurring OOMKilled incidents via container-aware heap sizing.</li>
             <li>178 PRs authored, 527 PRs reviewed across 21 repos &mdash; primary reviewer on the team's two
               highest-traffic repos.</li>
+            <li>Root-caused a production OutOfMemoryError on the high-traffic Integration Layer service caused by
+              large HTTP responses destabilizing the handler chain; shipped a catch-and-recover fix plus
+              payload-size logging to make the failure mode observable and non-fatal going forward.</li>
             <li>Owned the IL&harr;Acentra Darwin Box integration over 6 months, hardening it twice in production and
               resolving a data-integrity bug affecting 129 employees / 455 policies.</li>
             <li>Dev-owned the Balic Sales Hierarchy Dashboard (2 phases, 30 work items); caught and fixed an IDOR
               vulnerability while reviewing teammates' PRs.</li>
             <li>Built the HDFC Health Coins (WYH) integration: Kafka-based coin-credit flow with DLQ/Mongo failure
               logging and vitals dedupe by LOINC ID.</li>
+            <li>Automated GraalVM native-image metadata generation for a production service's build pipeline, moving
+              it from a manual, error-prone step to an automated pipeline stage.</li>
           </ul>
         </div>
 
@@ -343,7 +348,6 @@
         <div class="experience-card glass">
           <h3>Certifications</h3>
           <p>• IBM Certified Cloud Computing and Virtualization Practitioner</p>
-          <p>• End to End Machine Learning with TensorFlow on GCP</p>
         </div>
       </div>
 
