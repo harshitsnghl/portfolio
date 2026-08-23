@@ -45,36 +45,39 @@
 
     <header>
       <div class="header1">
-        <img class="img" src="/images/harshit.jpg" />
+        <div class="img-frame">
+          <img class="img" src="/images/harshit.jpg" />
+        </div>
         <h1>Harshit Singhal</h1>
       </div>
       <div class="header2">
-        <p>Software Development Engineer | Building Scalable & Resilient Systems</p>
+        <p>Software Development Engineer &mdash; Team Lead &amp; Forward Deployed Engineer</p>
       </div>
     </header>
 
 
     <blockquote class="glass magic-quote">
-      <i class="fa-solid fa-wand-magic-sparkles magic-icon"></i>
-      <span class="magic-text">I like doing magic.</span>
+      <i class="fa-solid fa-diagram-project magic-icon"></i>
+      <span class="magic-text">Owning systems end-to-end.</span>
       <p class="subtext">
-        It is my passion and I derive pure joy from crafting wonder and weaving it into the very fabric of
-        reality.</p>
+        From architecture to production incidents &mdash; I build platforms and stay accountable for them
+        long after they ship.</p>
     </blockquote>
 
     <section class="glass">
       <h2>About</h2>
       <p>
-        As a lifelong problem-solver, I’ve always been drawn to the power of technology to create elegant solutions.
-        My journey as a Software Development Engineer has taken me from developing mobile apps with React Native to
-        architecting complex, enterprise-scale systems for industry leaders. Currently, I’m applying my skills as a
-        Software Engineer at Bajaj Finserv Health, building the integration layer for a unified digital healthcare
-        experience.
+        I'm a Software Development Engineer at Bajaj Finserv Health, working on the Integration Layer that connects
+        health services, insurance products, and partner systems into one platform. Day to day that's a mix of IC
+        work and team lead / forward-deployed engineer responsibilities &mdash; I own delivery on core systems and
+        review across a 21-repo platform (178 PRs authored, 527 reviewed).
       </p>
       <p>
-        With a strong foundation in Java, Spring Boot, and cloud platforms like AWS and GCP, I thrive on building
-        scalable and efficient applications. Whether optimizing APIs to cut response times by 40% or designing
-        new systems from the ground up, my goal is always to deliver value and drive innovation.
+        I built AutoFlowRX, a config-driven file-processing engine that partners' bulk enrollment and policy data
+        flows through, from scratch &mdash; it's now grown into a platform spanning 319 work items. Before this I
+        spent three years at ADP building an enterprise document-processing system that combined Google Cloud
+        Document AI, MongoDB, and a Human-in-the-Loop validation workflow to push automated extraction accuracy from
+        95% to 100%.
       </p>
     </section>
 
@@ -84,19 +87,23 @@
         style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
         <div>
           <h3>Languages</h3>
-          <p>Java, SQL, JavaScript, TypeScript, Python, C++</p>
+          <p>Java, SQL, JavaScript, TypeScript, Python</p>
         </div>
         <div>
           <h3>Frameworks</h3>
-          <p>Spring Boot, React, Angular, Flutter, Node.js</p>
+          <p>Spring Boot, React, Angular</p>
+        </div>
+        <div>
+          <h3>Data & Messaging</h3>
+          <p>Kafka, MongoDB, Trino, ClickHouse, ELK, Lucene Query Language</p>
         </div>
         <div>
           <h3>Cloud & DevOps</h3>
-          <p>AWS, GCP, Docker, Kafka, MongoDB, Firebase, Terraform</p>
+          <p>Azure, AWS, GCP, Docker, Azure DevOps</p>
         </div>
         <div>
-          <h3>ML/AI</h3>
-          <p>LangChain, Document AI, TensorFlow</p>
+          <h3>Observability & Tooling</h3>
+          <p>OpenTelemetry, GraalVM, Git, Splunk, Postman, Bruno, Jenkins, JUnit</p>
         </div>
       </div>
     </section>
@@ -104,13 +111,111 @@
     <section id="projects">
       <h2>Projects</h2>
 
+      <h3 class="project-group-title">Bajaj Finserv Health</h3>
       <div class="project-grid">
+
+        <div class="project-card glass">
+          <h3>AutoFlowRX</h3>
+          <em>Java, Spring Boot, MongoDB, Kafka, Azure Blob</em>
+          <p>Designed and built a config-driven file-processing platform from scratch: blob-triggered ingestion,
+            per-partner rules stored in Mongo, and an idempotent Kafka producer. It's now the foundation for a
+            platform spanning 319 work items across 6 sub-systems.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>Java 11 &rarr; 21 / Spring Boot 2 &rarr; 3 Migration</h3>
+          <em>Java, Spring Boot, Kubernetes</em>
+          <p>Led the runtime migration on two production services and root-caused recurring OOMKilled incidents down
+            to container-aware heap sizing, eliminating the failure class in production.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>IL &harr; Acentra Health Integration</h3>
+          <em>Java, Spring Boot, Darwin Box</em>
+          <p>Owned this integration end-to-end over 6 months, hardening it twice in production (retry logic, virtual
+            threads), and resolved a data-integrity bug affecting 129 employees / 455 policies.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>HDFC Health Coins (WYH)</h3>
+          <em>Kafka, MongoDB, Salesforce</em>
+          <p>Built the coin-credit data flow (WYH &rarr; IL &rarr; SFDC) with DLQ and Mongo failure logging, vitals
+            filtering/dedupe by LOINC ID, and the <code>credit-coins</code> API contract.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>Balic Sales Hierarchy Dashboard</h3>
+          <em>Java, Spring Boot, React</em>
+          <p>Dev-owned across 2 phases (30 work items): built the core dashboard views and a later async performance
+            rework. Also caught and fixed an IDOR vulnerability while reviewing teammates' PRs.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>GraalVM Build Automation</h3>
+          <em>GraalVM, CI/CD</em>
+          <p>Automated native-image metadata generation for a production service's build pipeline, replacing a
+            manual, error-prone step with an automated pipeline stage.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>VAPT DoS Remediation</h3>
+          <em>Azure API Management, Kusto</em>
+          <p>Pulled 30 days of real production traffic (Kusto query) to set a data-driven rate limit on a public
+            passthrough endpoint &mdash; independently verified working post-deploy (429 on the 10th request).</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>Critical CVE Patch &mdash; React/Next.js RSC RCE</h3>
+          <em>React, Next.js</em>
+          <p>Patched a critical remote-code-execution advisory in the Utility Portal frontend. Advisory-to-merged-fix
+            turnaround: under 6.5 minutes, verified zero behavior change.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>ELK &rarr; ClickHouse/OpenTelemetry Migration Review</h3>
+          <em>OpenTelemetry, ClickHouse, Docker</em>
+          <p>Reviewed the observability migration across 4 services for consistency; caught and got fixed a critical
+            type-cast bug and a repeated unverified-artifact-download supply-chain gap pre-merge.</p>
+        </div>
+
+      </div>
+
+      <h3 class="project-group-title">ADP</h3>
+      <div class="project-grid">
+
+        <div class="project-card glass">
+          <h3>Enterprise Document Processing System</h3>
+          <em>Java, Python, ML, Google Cloud Document AI, MongoDB</em>
+          <p>Drove development of an enterprise-scale document processing system; integrated Document AI and a
+            Human-in-the-Loop validation workflow, raising automated extraction accuracy from 95% to 100% and
+            cutting manual processing time by 90%.</p>
+        </div>
+
+        <div class="project-card glass">
+          <h3>Automated Enrollment Termination System</h3>
+          <em>Java, Spring Boot</em>
+          <p>Architected a system processing hundreds of monthly transactions, removing manual effort from
+            age-based terminations. Led a team of 3 on the Critical Illness Plan enhancement project with 80% test
+            coverage.</p>
+        </div>
 
         <div class="project-card glass">
           <h3>Company Collaboration Form</h3>
           <em>Spring Boot, Hibernate, Angular, MySQL</em>
-          <p>Built an internal communication application handling concurrent active users. Secured 1st position in ADP
-            Hack-a-thon 2022. Improved loading time by 20%.</p>
+          <p>Built an internal communication application handling concurrent active users. Secured 1st position in
+            ADP Hack-a-thon 2022. Improved loading time by 20%.</p>
+        </div>
+
+      </div>
+
+      <h3 class="project-group-title">Tech Variable &amp; Personal</h3>
+      <div class="project-grid">
+
+        <div class="project-card glass">
+          <h3>Quii Mobile App</h3>
+          <em>React Native, Node.js, Firebase</em>
+          <p>Developed a mobile app with scalable backend infrastructure. Created a CLI automation tool reducing
+            development setup time by 10% across all React/React Native projects.</p>
         </div>
 
         <div class="project-card glass">
@@ -121,17 +226,10 @@
         </div>
 
         <div class="project-card glass">
-          <h3>Quii Mobile App</h3>
-          <em>React Native, Node.js, Firebase</em>
-          <p>Developed a mobile app with scalable backend. Created a CLI automation tool reducing development setup time
-            by 10%.</p>
-        </div>
-
-        <div class="project-card glass">
           <h3>KU SE Management App</h3>
           <em>Angular, Node.js, SQL</em>
-          <p>Engineered a student management system processing 4000+ records, reducing result generation time by 80% and
-            improving accuracy.</p>
+          <p>Engineered a student management system processing 4000+ records, reducing result generation time by
+            80% and improving accuracy.</p>
         </div>
 
         <div class="project-card glass">
@@ -143,7 +241,7 @@
 
         <div class="project-card glass">
           <h3>COVID-19 Bioinformatics</h3>
-          <em>Full Stack Web & Android</em>
+          <em>Full Stack Web &amp; Android</em>
           <p>Led a full-stack project with cloud deployment. Developed 13 modules for 36 states/UTs handling large
             datasets.</p>
         </div>
@@ -152,9 +250,33 @@
     </section>
 
     <blockquote class="glass">
-      <p class="subtext">Step into the enchanting world of magic, where the real power emanates from the mystical
-        Law of the Magician! Let the wonder unfold.</p>
+      <p class="subtext">Solid engineering is quiet &mdash; systems that stay up, code that's easy to review,
+        and decisions you can defend with data.</p>
     </blockquote>
+
+    <section class="glass" id="achievements">
+      <h2>Achievements</h2>
+      <div class="skills-grid"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div>
+          <h3>Sharp Shark Award</h3>
+          <p>Bajaj Finserv Health, Jul 2026</p>
+        </div>
+        <div>
+          <h3>1st / 50 &mdash; ADP Hack-a-thon 2022</h3>
+          <p>Company Collaboration Form (Spring Boot, Hibernate, Angular)</p>
+        </div>
+        <div>
+          <h3>466.4 Story Points Delivered</h3>
+          <p>Closed work items, created &cup; dev-owned, at Bajaj Finserv Health</p>
+        </div>
+        <div>
+          <h3>Code Review at Scale</h3>
+          <p>527 PRs reviewed vs. 178 authored (~3x) across 21 repos &mdash; primary reviewer on the team's two
+            highest-traffic repos</p>
+        </div>
+      </div>
+    </section>
 
     <section class="left" id="experience">
       <h2>Experience</h2>
@@ -163,37 +285,40 @@
 
         <div class="experience-card glass">
           <h3>Bajaj Finserv Health</h3>
-          <h4>Software Development Engineer</h4>
-          <span class="role-meta">Aug 2025 - Present</span>
+          <h4>Software Development Engineer &mdash; Team Lead &amp; Forward Deployed Engineer</h4>
+          <span class="role-meta">Aug 2025 - Present | Pune, IN</span>
           <p>
-            Contributing to the central Integration Layer to deliver a unified digital healthcare experience. Developing
-            infrastructure enabling seamless interoperability between health services, insurance products, and
-            patient-facing applications.
+            Own the Integration Layer connecting health services, insurance products, and partner systems, splitting
+            time between hands-on delivery and team lead / forward-deployed engineer duties.
           </p>
+          <ul style="margin-top: 0.75rem; padding-left: 1.2rem;">
+            <li>Architected and built AutoFlowRX, a config-driven file-processing platform, end-to-end &mdash; now
+              the foundation for a platform spanning 319 work items across 6 sub-systems.</li>
+            <li>Led the Java 11&rarr;21 / Spring Boot 2&rarr;3 migration on two production services; root-caused and
+              fixed recurring OOMKilled incidents via container-aware heap sizing.</li>
+            <li>178 PRs authored, 527 PRs reviewed across 21 repos &mdash; primary reviewer on the team's two
+              highest-traffic repos.</li>
+            <li>Owned the IL&harr;Acentra Darwin Box integration over 6 months, hardening it twice in production and
+              resolving a data-integrity bug affecting 129 employees / 455 policies.</li>
+            <li>Dev-owned the Balic Sales Hierarchy Dashboard (2 phases, 30 work items); caught and fixed an IDOR
+              vulnerability while reviewing teammates' PRs.</li>
+            <li>Built the HDFC Health Coins (WYH) integration: Kafka-based coin-credit flow with DLQ/Mongo failure
+              logging and vitals dedupe by LOINC ID.</li>
+          </ul>
         </div>
 
         <div class="experience-card glass">
           <h3>Automatic Data Processing (ADP)</h3>
-
-          <div style="margin-bottom: 1.5rem;">
-            <h4>Sr. Member Technical</h4>
-            <span class="role-meta">Sep 2024 - Aug 2025</span>
-            <p>
-              Driven development of an enterprise-scale document processing system using Java, Python, and LLMs,
-              achieving 95% accuracy in automated data extraction. Integrating Google Cloud Document AI and MongoDB,
-              reducing manual processing time by 90%.
-            </p>
-          </div>
-
-          <div>
-            <h4>Member Technical</h4>
-            <span class="role-meta">Jun 2022 - Sep 2024</span>
-            <p>
-              Architected an automated enrollment termination system processing hundreds of monthly transactions. Led a
-              team in Critical Illness Plan enhancement, delivering features with 80% test coverage. Optimized RESTful
-              APIs reducing response time by 40%.
-            </p>
-          </div>
+          <h4>Senior Member Technical</h4>
+          <span class="role-meta">Jul 2022 - Aug 2025 | Hyderabad, IN</span>
+          <p>
+            Drove development of an enterprise-scale document processing system using Java, Python, and multiple ML
+            models. Integrated Google Cloud Document AI, MongoDB, and a Human-in-the-Loop validation workflow,
+            raising automated extraction accuracy from 95% to 100% and cutting manual processing time by 90%.
+            Architected an automated enrollment termination system processing hundreds of monthly transactions, led
+            a team of 3 on the Critical Illness Plan enhancement project (80% test coverage), and optimized RESTful
+            APIs via lazy loading and chunk processing, cutting response time by 40%.
+          </p>
         </div>
 
         <div class="experience-card glass">
@@ -226,11 +351,11 @@
 
     <blockquote>
       <p class="center">Let's Connect</p>
-      <p class="subtext center">and make some magic happen!</p>
+      <p class="subtext center">Open to interesting problems and good teams.</p>
       <div class="social-icons">
-        <a href="https://www.facebook.com/harshit.singhal.7355/" target="_blank"><i class="fab fa-facebook"></i></a>
-        <a href="https://www.instagram.com/harshitsinghal__" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="https://twitter.com/HarshitSnghl" target="_blank"><i class="fab fa-twitter"></i></a>
+        <a href="https://www.facebook.com/dwayne.singhal" target="_blank"><i class="fab fa-facebook"></i></a>
+        <a href="https://www.instagram.com/dwayne.singhal/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://x.com/dwayne_singhal" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
         <a href="https://medium.com/@harshitsnghl" target="_blank"><i class="fab fa-medium"></i></a>
         <a href="https://www.github.com/harshitsnghl" target="_blank"><i class="fab fa-github"></i></a>
         <a href="https://www.linkedin.com/in/harshitsinghal1999" target="_blank"><i class="fab fa-linkedin"></i></a>
