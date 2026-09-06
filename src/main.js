@@ -7,7 +7,6 @@ import { createSpaceScene } from './scene/space-scene.js';
 import { createRenderLoop } from './lib/render-loop.js';
 import { onThemeChange } from './theme/theme-store.js';
 import { initThemeToggle } from './theme/theme-toggle.js';
-
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const renderer = new THREE.WebGLRenderer({

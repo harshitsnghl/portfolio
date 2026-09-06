@@ -216,6 +216,21 @@ blockquote {
   /* Override default */
 }
 
+/* LinkedIn Profile Badge wrapper */
+.linkedin-badge-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Both badges exist in the DOM; CSS shows the one matching the current theme */
+:root[data-theme='dark'] .LI-profile-badge[data-theme='light'] {
+  display: none;
+}
+:root[data-theme='light'] .LI-profile-badge[data-theme='dark'] {
+  display: none;
+}
+
 /* Specific Layout Adjustments */
 .img-frame {
   width: 200px;
